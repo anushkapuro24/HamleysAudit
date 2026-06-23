@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hamleys Store Audit Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C8102E;--red-light:#fdf0f2;--red-mid:#fecdd3;
+  --navy:#1a2340;--navy-mid:#2d3a5c;--navy-light:#eef0f6;
+  --green:#16a34a;--green-bg:#dcfce7;
+  --amber:#d97706;--amber-bg:#fef3c7;
+  --teal:#0891b2;--teal-bg:#cffafe;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --bg:#f4f6fb;--surface:#fff;
+  --r:12px;--rs:7px;
+  --sh:0 2px 10px rgba(0,0,0,.07);--sh2:0 4px 20px rgba(0,0,0,.1)
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,sans-serif;font-size:14px;
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+  position:relative
+}
+
+/* ── TOY BACKGROUND ── */
+.toy-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.tf{position:absolute;font-size:2rem;opacity:.03;animation:ft 12s ease-in-out infinite}
+.tf:nth-child(1){top:4%;left:1.5%;animation-delay:0s}
+.tf:nth-child(2){top:12%;right:2%;animation-delay:2s;font-size:2.4rem}
+.tf:nth-child(3){top:38%;left:0.5%;animation-delay:4s;font-size:1.6rem}
+.tf:nth-child(4){top:62%;right:1.5%;animation-delay:6s;font-size:2rem}
+.tf:nth-child(5){bottom:14%;left:3%;animation-delay:1s;font-size:1.5rem}
+.tf:nth-child(6){bottom:6%;right:5%;animation-delay:3.5s;font-size:2.2rem}
+.tf:nth-child(7){top:78%;left:0%;animation-delay:5.5s;font-size:1.8rem}
+.tf:nth-child(8){top:26%;right:8%;animation-delay:7s;font-size:1.4rem}
+@keyframes ft{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-22px) rotate(5deg)}}
+
+/* ── NAV ── */
+nav{
+  background:var(--navy);padding:0 24px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(0,0,0,.3)
+}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:34px;height:34px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff;flex-shrink:0}
+.nav-title{color:#fff;font-weight:700;font-size:15px}
+.nav-sub{color:rgba(255,255,255,.38);font-size:10px;margin-top:1px}
+.nav-right{display:flex;align-items:center;gap:7px}
+#stamp{font-size:11px;color:rgba(255,255,255,.32);margin-right:4px}
+.nbtn{
+  height:30px;padding:0 12px;border-radius:var(--rs);
+  border:1px solid rgba(255,255,255,.18);background:transparent;
+  color:rgba(255,255,255,.7);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;
+  font-family:inherit;text-decoration:none
+}
+.nbtn:hover{background:rgba(255,255,255,.12);color:#fff}
+.nbtn svg{width:13px;height:13px;flex-shrink:0}
+.nbtn.upload{background:rgba(200,16,46,.65);border-color:var(--red);color:#fff}
+.nbtn.upload:hover{background:var(--red)}
+
+/* ── MAIN LAYOUT ── */
+#main{max-width:1400px;margin:0 auto;padding:18px 22px 56px;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1}
+
+/* ── EMPTY STATE ── */
+#empty{text-align:center;padding:90px 24px}
+#empty .e-icon{font-size:56px;margin-bottom:18px}
+#empty h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px}
+#empty p{color:var(--muted);font-size:14px;max-width:360px;margin:0 auto 24px;line-height:1.65}
+.go-upload{
+  display:inline-flex;align-items:center;gap:7px;padding:12px 26px;
+  background:var(--red);color:#fff;border-radius:8px;font-size:14px;
+  font-weight:700;text-decoration:none;
+  box-shadow:0 4px 16px rgba(200,16,46,.3);transition:all .2s
+}
+.go-upload:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(200,16,46,.4)}
+
+/* ── UPLOAD CHIPS ── */
+#up-bar{
+  background:var(--navy-light);border:1px solid #c7d0e8;
+  border-radius:var(--r);padding:9px 16px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap
+}
+.ub-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--navy-mid);white-space:nowrap}
+.ub-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.uchip{
+  padding:4px 13px;border-radius:20px;font-size:11px;font-weight:600;
+  border:1.5px solid transparent;cursor:pointer;transition:all .15s
+}
+.uchip.on{background:var(--red);color:#fff;border-color:var(--red)}
+.uchip.off{background:var(--surface);color:var(--navy-mid);border-color:var(--border)}
+.uchip.off:hover{border-color:var(--navy-mid);color:var(--navy)}
+
+/* ── FILTER BAR ── */
+#fbar{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:12px 16px;
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;
+  box-shadow:var(--sh)
+}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+select.fs{
+  height:32px;padding:0 8px;border:1px solid var(--border);border-radius:var(--rs);
+  background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;
+  min-width:152px;cursor:pointer;transition:border-color .15s
+}
+select.fs:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(200,16,46,.1)}
+.fsp{flex:1;min-width:8px}
+.f-meta{text-align:right}
+#f-count{font-size:13px;font-weight:700;color:var(--navy)}
+#f-stores{font-size:10px;color:var(--muted);margin-top:1px}
+#f-clear{
+  height:32px;padding:0 13px;border:1px solid var(--border);border-radius:var(--rs);
+  background:var(--surface);color:var(--muted);font-size:12px;
+  cursor:pointer;font-family:inherit;transition:all .15s
+}
+#f-clear:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
+
+/* ── KPI CARDS ── */
+#kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kc{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px 20px;
+  box-shadow:var(--sh);position:relative;overflow:hidden
+}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kc.navy::before{background:linear-gradient(90deg,var(--navy),var(--navy-mid))}
+.kc.red::before{background:linear-gradient(90deg,var(--red),#e84060)}
+.kc.green::before{background:linear-gradient(90deg,var(--green),#22c55e)}
+.kc.amber::before{background:linear-gradient(90deg,var(--amber),#f59e0b)}
+.kc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.kc-val{font-size:32px;font-weight:800;line-height:1;margin-bottom:4px;color:var(--text)}
+.kc-val.red{color:var(--red)}.kc-val.green{color:var(--green)}
+.kc-trend{font-size:11px;font-weight:700;margin-bottom:2px;min-height:16px}
+.tu{color:var(--green)}.td{color:var(--red)}.tf2{color:var(--muted)}
+.kc-sub{font-size:11px;color:var(--muted)}
+
+/* ── PANEL ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.ph{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.pt{font-size:14px;font-weight:700;color:var(--text)}
+.ps{font-size:11px;color:var(--muted);margin-top:2px}
+.pb{padding:18px 20px}
+
+/* ── SECTION SCORES ── */
+#sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+#sec-chart-wrap{position:relative;height:260px}
+.stbl{width:100%;border-collapse:collapse;font-size:12px}
+.stbl th{
+  padding:8px 10px;text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  border-bottom:2px solid var(--border)
+}
+.stbl th.r{text-align:right}
+.stbl td{padding:9px 10px;border-bottom:1px solid var(--border)}
+.stbl td.r{text-align:right;color:var(--muted)}
+.stbl tr:last-child td{border-bottom:none}
+.stbl tr:hover td{background:var(--bg)}
+.sp{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.sp-g{background:var(--green-bg);color:var(--green)}
+.sp-a{background:var(--amber-bg);color:var(--amber)}
+.sp-r{background:var(--red-light);color:var(--red)}
+.sp-n{background:var(--bg);color:var(--muted)}
+
+/* ── TREND ── */
+#trend-wrap{position:relative;height:280px}
+
+/* ── STORE SCORECARD ── */
+.tbl-scroll{overflow-x:auto}
+table.sct{width:100%;border-collapse:collapse;font-size:12px;min-width:860px}
+table.sct th{
+  padding:9px 12px;text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  background:var(--bg);border-bottom:2px solid var(--border);
+  cursor:pointer;user-select:none;white-space:nowrap
+}
+table.sct th:hover{color:var(--red)}
+table.sct th .si{margin-left:3px;font-size:9px;opacity:.4}
+table.sct th.asc .si::after{content:'▲';opacity:1}
+table.sct th.desc .si::after{content:'▼';opacity:1}
+table.sct th .si::after{content:'⇕'}
+table.sct td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.sct tbody tr{cursor:pointer;transition:background .1s}
+table.sct tbody tr:hover{background:#fef5f5}
+table.sct tbody tr.open-row{background:#fef5f5}
+
+/* SEVERITY BADGE */
+.sev{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sev-c{background:var(--red-light);color:var(--red)}
+.sev-a{background:var(--amber-bg);color:var(--amber)}
+.sev-g{background:var(--teal-bg);color:var(--teal)}
+.sev-e{background:var(--green-bg);color:var(--green)}
+
+/* DETAIL ROW */
+.det-row td{padding:0!important}
+.det-inner{
+  background:#fdf8f8;border-top:2px solid var(--red-mid);
+  border-bottom:1px solid var(--border);display:none;padding:18px 20px
+}
+.det-row.open .det-inner{display:block}
+
+/* AUDIT TABS inside detail */
+.audit-tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.atab{
+  padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;
+  border:1.5px solid var(--border);background:var(--surface);color:var(--muted);
+  cursor:pointer;transition:all .15s
+}
+.atab.on{background:var(--red);color:#fff;border-color:var(--red)}
+.atab:hover:not(.on){border-color:var(--red-mid);color:var(--navy)}
+
+.audit-content{display:none}
+.audit-content.show{display:block}
+
+.det-secs{display:flex;flex-wrap:wrap;gap:16px}
+.det-sec{flex:1;min-width:210px}
+.det-sec-title{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--red);margin-bottom:8px;padding-bottom:5px;
+  border-bottom:1px solid var(--red-mid);display:flex;align-items:center;justify-content:space-between
+}
+.det-q{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:4px 0;border-bottom:1px dashed var(--border);gap:8px;font-size:11px
+}
+.det-q:last-child{border-bottom:none}
+.det-ql{color:var(--text);flex:1;line-height:1.4}
+.det-qv{font-weight:700;white-space:nowrap;flex-shrink:0;font-size:11px}
+.det-qv.y{color:var(--green)}
+.det-qv.n{color:var(--red)}
+.det-qv.na{color:var(--muted)}
+
+/* ── SCORE HEATMAP ── */
+.heat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.hcell{border-radius:8px;padding:10px 12px;cursor:default;transition:transform .15s}
+.hcell:hover{transform:scale(1.03)}
+.h-store{font-size:11px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-score{font-size:24px;font-weight:800;margin:3px 0}
+.h-sev{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+
+/* ── CRITICAL ALERTS ── */
+#alerts-list{display:flex;flex-direction:column;gap:10px}
+.al{border-radius:8px;padding:14px 16px;display:flex;align-items:flex-start;gap:14px;border-left:4px solid}
+.al.crit{background:var(--red-light);border-color:var(--red)}
+.al.risk{background:var(--amber-bg);border-color:var(--amber)}
+.al.sec{background:#fffbeb;border-color:#f59e0b}
+.al-ico{font-size:20px;flex-shrink:0;margin-top:1px}
+.al-body{flex:1}
+.al-name{font-weight:700;font-size:14px}
+.al-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.al-tags{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.al-tag{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(0,0,0,.07)}
+.al-score{font-size:24px;font-weight:800;flex-shrink:0;align-self:center}
+.al.crit .al-score{color:var(--red)}.al.risk .al-score{color:var(--amber)}
+.no-alerts{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── STORE PROGRESS PANEL ── */
+.prog-pane{display:none}
+.prog-pane.show{display:block}
+.prog-inner{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.prog-charts{display:flex;flex-direction:column;gap:14px}
+.prog-chart-row{background:var(--bg);border-radius:8px;padding:12px 14px}
+.prog-chart-label{font-size:11px;font-weight:700;color:var(--navy-mid);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.prog-chart-wrap{position:relative;height:80px}
+.prog-summary{display:flex;flex-direction:column;gap:8px}
+.prog-sec-row{
+  background:var(--bg);border-radius:8px;padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+.prog-sec-name{font-size:12px;font-weight:600;color:var(--navy);flex:1}
+.prog-sec-scores{display:flex;gap:5px;align-items:center}
+.prog-dot{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;
+  border:2px solid rgba(0,0,0,.08)
+}
+.prog-arrow{font-size:14px;font-weight:900;flex-shrink:0}
+.prog-arrow.up{color:var(--green)}
+.prog-arrow.dn{color:var(--red)}
+.prog-arrow.flat{color:var(--muted)}
+.prog-empty{color:var(--muted);font-size:13px;padding:24px;text-align:center}
+
+/* ── PRINT ── */
+@media print{
+  nav,.toy-bg,#up-bar,#fbar,.nbtn{display:none!important}
+  body{background:#fff}
+  .panel,.kc{box-shadow:none;border:1px solid #ccc}
+  #main{padding:0}
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){#kpis{grid-template-columns:repeat(2,1fr)}#sec-grid{grid-template-columns:1fr}}
+@media(max-width:560px){#kpis{grid-template-columns:1fr}#main{padding:12px 12px 40px}}
+</style>
+</head>
+<body>
+
+<!-- FLOATING TOY BG -->
+<div class="toy-bg" aria-hidden="true">
+  <div class="tf">🧸</div><div class="tf">🎮</div><div class="tf">🚂</div><div class="tf">🎲</div>
+  <div class="tf">🪀</div><div class="tf">🤖</div><div class="tf">🧩</div><div class="tf">🎯</div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">H</div>
+    <div>
+      <div class="nav-title">Store Audit Dashboard</div>
+      <div class="nav-sub">Hamleys Retail Operations</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span id="stamp"></span>
+    <a href="index.html" class="nbtn">Home</a>
+    <button class="nbtn" id="btn-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button class="nbtn" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print
+    </button>
+    <a href="admin.html" class="nbtn upload">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload
+    </a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- EMPTY STATE -->
+  <div id="empty">
+    <div class="e-icon">📋</div>
+    <h2>No audit data loaded</h2>
+    <p>Upload your Microsoft Forms CSV on the Admin page, then come back here to view scores, section breakdowns, and critical alerts.</p>
+    <a href="admin.html" class="go-upload">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload CSV Now
+    </a>
+  </div>
+
+  <!-- DASHBOARD (shown once data loads) -->
+  <div id="dash" style="display:none;flex-direction:column;gap:16px">
+
+    <!-- UPLOAD CHIPS BAR -->
+    <div id="up-bar">
+      <span class="ub-lbl">Uploads</span>
+      <div class="ub-chips" id="ub-chips"></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div id="fbar">
+      <div class="fg"><label class="fl">ROM</label>
+        <select class="fs" id="f-rom"><option value="">All ROMs</option></select></div>
+      <div class="fg"><label class="fl">Regional Manager</label>
+        <select class="fs" id="f-rm"><option value="">All RMs</option></select></div>
+      <div class="fg"><label class="fl">Store Director / Auditor</label>
+        <select class="fs" id="f-aud"><option value="">All Auditors</option></select></div>
+      <div class="fg"><label class="fl">Store</label>
+        <select class="fs" id="f-store"><option value="">All Stores</option></select></div>
+      <div class="fsp"></div>
+      <div class="f-meta">
+        <div id="f-count">— audits</div>
+        <div id="f-stores">— stores · last 5 per store</div>
+      </div>
+      <button id="f-clear">✕ Clear</button>
+    </div>
+
+    <!-- KPI ROW -->
+    <div id="kpis">
+      <div class="kc navy">
+        <div class="kc-lbl">Average Score</div>
+        <div class="kc-val" id="k-avg">—</div>
+        <div class="kc-trend" id="k-trend"></div>
+        <div class="kc-sub">Across filtered audits</div>
+      </div>
+      <div class="kc green">
+        <div class="kc-lbl">Audits Passing</div>
+        <div class="kc-val" id="k-pass">—</div>
+        <div class="kc-trend" id="k-pass-t"></div>
+        <div class="kc-sub">Score ≥ 85%</div>
+      </div>
+      <div class="kc red">
+        <div class="kc-lbl">Critical Stores</div>
+        <div class="kc-val red" id="k-crit">—</div>
+        <div class="kc-trend"></div>
+        <div class="kc-sub">Below 50%</div>
+      </div>
+      <div class="kc amber">
+        <div class="kc-lbl">Total Audits</div>
+        <div class="kc-val" id="k-total">—</div>
+        <div class="kc-trend"></div>
+        <div class="kc-sub">In current view</div>
+      </div>
+    </div>
+
+    <!-- SECTION SCORES -->
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Section Scores</div><div class="ps">Average per section — filtered audits · last 5 per store</div></div>
+      </div>
+      <div class="pb">
+        <div id="sec-grid">
+          <div id="sec-chart-wrap"><canvas id="sec-chart"></canvas></div>
+          <div>
+            <table class="stbl">
+              <thead><tr>
+                <th>Section</th><th class="r">Avg</th><th class="r">Min</th><th class="r">Max</th><th class="r">#</th>
+              </tr></thead>
+              <tbody id="sec-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREND CHART -->
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Score Trend — Last 5 Audits per Store</div>
+        <div class="ps">Overall score over time · per store when filtered, aggregate otherwise</div></div>
+      </div>
+      <div class="pb"><div id="trend-wrap"><canvas id="trend-chart"></canvas></div></div>
+    </div>
+
+    <!-- STORE SCORECARD TABLE -->
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Store Scorecard</div>
+        <div class="ps">Most recent audit per store · click row to expand all section questions</div></div>
+      </div>
+      <div style="padding:0">
+        <div class="tbl-scroll">
+          <table class="sct">
+            <thead id="sct-head"></thead>
+            <tbody id="sct-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEATMAP: shown only when no single store selected -->
+    <div class="panel" id="heat-panel">
+      <div class="ph">
+        <div><div class="pt">Store Score Overview</div>
+        <div class="ps">Most recent overall score per store</div></div>
+      </div>
+      <div class="pb"><div class="heat-grid" id="heat-grid"></div></div>
+    </div>
+
+    <!-- STORE PROGRESS: shown only when a single store is selected -->
+    <div class="panel" id="prog-panel" style="display:none">
+      <div class="ph">
+        <div>
+          <div class="pt" id="prog-title">Store Progress — Section Trends</div>
+          <div class="ps">How each section is moving across the last 5 audits</div>
+        </div>
+      </div>
+      <div class="pb">
+        <div id="prog-panes"></div>
+      </div>
+    </div>
+
+    <!-- CRITICAL ALERTS -->
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt" id="al-title">⚠ Critical Alerts</div>
+          <div class="ps" id="al-sub">Stores below 50% (Critical) or 65% (At Risk)</div>
+        </div>
+      </div>
+      <div class="pb"><div id="alerts-list"></div></div>
+    </div>
+
+  </div><!-- /dash -->
+</div><!-- /main -->
+
+<script>
+'use strict';
+
+/* ═══ CONSTANTS ═══ */
+const STORAGE_KEY = 'hamleys_audit_sessions';
+const SECTIONS = [
+  { key:'foh', label:'FOH & Visual Merchandising', short:'FOH & VM',    q1:1,  qN:27 },
+  { key:'csd', label:'Customer Service & Till',    short:'CSD & Till',  q1:28, qN:40 },
+  { key:'ppl', label:'People & Training',          short:'People',      q1:41, qN:52 },
+  { key:'boh', label:'Back of House & Inventory',  short:'BOH & Inv',   q1:53, qN:66 },
+  { key:'com', label:'Compliance & Admin',         short:'Compliance',  q1:67, qN:72 },
+];
+
+/* ═══ STATE ═══ */
+let sessions = [], activeIdx = 0;
+let allRows = [], filteredRows = [], qLabels = [];
+let sortState = { col: 'overall', dir: 'desc' };
+let secChart = null, trendChart = null;
+
+/* ═══ COLOURS ═══ */
+const PALETTE = ['#C8102E','#1a2340','#d97706','#0891b2','#16a34a','#7c3aed','#db2777','#059669','#ea580c','#0284c7'];
+function scCol(s){
+  if(s===null) return '#94a3b8';
+  if(s>=85) return '#16a34a';
+  if(s>=65) return '#d97706';
+  return '#C8102E';
+}
+function scCls(s){
+  if(s===null) return 'sp-n';
+  if(s>=85) return 'sp-g';
+  if(s>=65) return 'sp-a';
+  return 'sp-r';
+}
+function heatBg(s){
+  if(s===null) return '#f1f5f9';
+  if(s>=85) return '#dcfce7';
+  if(s>=65) return '#fef3c7';
+  return '#fee2e2';
+}
+function sevCls(sv){
+  return {Critical:'sev-c','At Risk':'sev-a',Good:'sev-g',Excellent:'sev-e'}[sv]||'';
+}
+function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+
+/* ═══ LOAD FROM STORAGE ═══ */
+function init() {
+  try { sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch(e){ sessions=[]; }
+  if (!sessions.length) { document.getElementById('empty').style.display='block'; return; }
+  activeIdx = sessions.length - 1;
+  loadSession(activeIdx);
+}
+
+function loadSession(idx) {
+  activeIdx = idx;
+  const s = sessions[idx];
+  allRows  = s.rows;
+  qLabels  = s.qLabels || [];
+  document.getElementById('stamp').textContent = 'Last upload: ' + s.label;
+  document.getElementById('empty').style.display = 'none';
+  const dash = document.getElementById('dash');
+  dash.style.display = 'flex';
+  renderUploadBar();
+  buildDropdowns(allRows);
+  applyFilters();
+}
+
+/* ═══ UPLOAD BAR ═══ */
+function renderUploadBar() {
+  const wrap = document.getElementById('ub-chips');
+  wrap.innerHTML = '';
+  sessions.forEach((s,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'uchip ' + (i===activeIdx?'on':'off');
+    btn.textContent = s.label + ' (' + s.rowCount + ')';
+    btn.onclick = () => loadSession(i);
+    wrap.appendChild(btn);
+  });
+}
+
+/* ═══ DROPDOWNS ═══ */
+function buildDropdowns(rows) {
+  fill('f-rom',   uniq(rows,'rom'),   'All ROMs');
+  fill('f-rm',    uniq(rows,'rm'),    'All RMs');
+  fill('f-aud',   uniq(rows,'auditor'),'All Auditors');
+  fill('f-store', uniq(rows,'store'), 'All Stores');
+  ['f-rom','f-rm','f-aud','f-store'].forEach(id => {
+    document.getElementById(id).onchange = applyFilters;
+  });
+  document.getElementById('f-clear').onclick = () => {
+    ['f-rom','f-rm','f-aud','f-store'].forEach(id => { document.getElementById(id).value=''; });
+    applyFilters();
+  };
+}
+
+function fill(id, vals, def) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${def}</option>`;
+  vals.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v===cur) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function uniq(rows, key) {
+  return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+}
+
+/* ═══ FILTER ═══ */
+function applyFilters() {
+  const rom   = gv('f-rom');
+  const rm    = gv('f-rm');
+  const aud   = gv('f-aud');
+  const store = gv('f-store');
+
+  // LAST 5 per store from full set
+  const last5 = lastNPerStore(allRows, 5);
+
+  filteredRows = last5.filter(r =>
+    (!rom   || r.rom     === rom)   &&
+    (!rm    || r.rm      === rm)    &&
+    (!aud   || r.auditor === aud)   &&
+    (!store || r.store   === store)
+  );
+
+  const stores = [...new Set(filteredRows.map(r=>r.store).filter(Boolean))];
+  document.getElementById('f-count').textContent  = filteredRows.length + ' audits';
+  document.getElementById('f-stores').textContent = stores.length + ' stores · last 5 per store';
+
+  renderAll();
+}
+
+function gv(id){ return document.getElementById(id).value; }
+
+function lastNPerStore(rows, n) {
+  const by = {};
+  rows.forEach(r => {
+    const k = r.store||'';
+    if(!by[k]) by[k]=[];
+    by[k].push(r);
+  });
+  const out = [];
+  Object.values(by).forEach(arr => {
+    arr.sort((a,b) => b.ts - a.ts);
+    out.push(...arr.slice(0, n));
+  });
+  return out;
+}
+
+function mostRecent(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const k = r.store||'';
+    if (!map[k] || r.ts > map[k].ts) map[k] = r;
+  });
+  return Object.values(map);
+}
+
+/* ═══ RENDER ALL ═══ */
+function renderAll() {
+  const storeFilter = gv('f-store');
+  const singleStore = !!storeFilter;
+
+  // Toggle panels: heatmap for overview, progress for single-store drill-down
+  document.getElementById('heat-panel').style.display = singleStore ? 'none' : '';
+  document.getElementById('prog-panel').style.display = singleStore ? ''     : 'none';
+
+  renderKPIs();
+  renderSections();
+  renderTrend();
+  renderTable();
+  if (singleStore) {
+    renderProgress();
+  } else {
+    renderHeatmap();
+  }
+  renderAlerts();
+}
+
+/* ─── KPIs ─── */
+function renderKPIs() {
+  const valid = filteredRows.filter(r=>r.overall!==null);
+  const avgScore = avg(valid.map(r=>r.overall));
+
+  document.getElementById('k-avg').textContent   = avgScore!==null ? avgScore.toFixed(1)+'%' : '—';
+  document.getElementById('k-total').textContent = filteredRows.length;
+
+  const pass = valid.filter(r=>r.overall>=85);
+  document.getElementById('k-pass').textContent = valid.length
+    ? (pass.length/valid.length*100).toFixed(0)+'%' : '—';
+
+  const crit = mostRecent(filteredRows).filter(r=>r.overall!==null&&r.overall<50);
+  document.getElementById('k-crit').textContent = crit.length;
+
+  // Trend arrow: compare first half vs second half
+  document.getElementById('k-trend').innerHTML = '';
+  document.getElementById('k-pass-t').innerHTML = '';
+  if (valid.length >= 4) {
+    const sorted = [...valid].sort((a,b)=>a.ts-b.ts);
+    const h = Math.floor(sorted.length/2);
+    const pa = avg(sorted.slice(0,h).map(r=>r.overall));
+    const ca = avg(sorted.slice(h).map(r=>r.overall));
+    if (pa!==null && ca!==null) {
+      const d = ca - pa;
+      const cl = d>0?'tu':d<0?'td':'tf2';
+      const ar = d>0?'▲':d<0?'▼':'—';
+      document.getElementById('k-trend').innerHTML =
+        `<span class="${cl}">${ar} ${Math.abs(d).toFixed(1)}% vs prev period</span>`;
+    }
+  }
+}
+
+/* ─── SECTION SCORES ─── */
+function renderSections() {
+  const tbody = document.getElementById('sec-tbody');
+  tbody.innerHTML = '';
+  const labels=[], vals=[], colors=[], mins=[], maxs=[], cnts=[];
+
+  SECTIONS.forEach(sec => {
+    const scores = filteredRows.map(r=>r.sections[sec.key]).filter(v=>v!==null);
+    const a = avg(scores);
+    const mn = scores.length ? Math.min(...scores) : null;
+    const mx = scores.length ? Math.max(...scores) : null;
+    labels.push(sec.short);
+    vals.push(a!==null ? +a.toFixed(1) : 0);
+    colors.push(scCol(a));
+    mins.push(mn); maxs.push(mx); cnts.push(scores.length);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;color:var(--navy)">${sec.label}</td>
+      <td class="r"><span class="sp ${scCls(a)}">${a!==null?a.toFixed(1)+'%':'—'}</span></td>
+      <td class="r">${mn!==null?mn.toFixed(1)+'%':'—'}</td>
+      <td class="r">${mx!==null?mx.toFixed(1)+'%':'—'}</td>
+      <td class="r">${scores.length}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  if (secChart) secChart.destroy();
+  secChart = new Chart(document.getElementById('sec-chart').getContext('2d'), {
+    type:'bar',
+    data:{labels, datasets:[{data:vals,backgroundColor:colors,borderRadius:6,borderSkipped:false}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title:i=>[i[0].label],
+          label:i=>{
+            const x=i.dataIndex;
+            return[` Avg: ${vals[x]}%`,
+                   ` Min: ${mins[x]!==null?mins[x].toFixed(1)+'%':'—'}`,
+                   ` Max: ${maxs[x]!==null?maxs[x].toFixed(1)+'%':'—'}`,
+                   ` Audits: ${cnts[x]}`];
+          }
+        }}
+      },
+      scales:{
+        x:{min:0,max:100,grid:{color:'#f1f5f9'},ticks:{callback:v=>v+'%',font:{size:11}}},
+        y:{ticks:{font:{size:12}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+/* ─── TREND ─── */
+function renderTrend() {
+  if (trendChart) trendChart.destroy();
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  const storeFilter = gv('f-store');
+
+  // Group by store, sort each by date
+  const byStore = {};
+  filteredRows.forEach(r => {
+    const k = r.store||'Unknown';
+    if(!byStore[k]) byStore[k]=[];
+    byStore[k].push(r);
+  });
+  Object.values(byStore).forEach(a=>a.sort((a,b)=>a.ts-b.ts));
+
+  const storeKeys = Object.keys(byStore);
+  let datasets;
+
+  if (storeKeys.length <= 8) {
+    // One line per store
+    datasets = storeKeys.map((store,i) => ({
+      label: store,
+      data: byStore[store].map(r=>({x:r.date, y:r.overall!==null?+r.overall.toFixed(1):null})),
+      borderColor: PALETTE[i%PALETTE.length],
+      backgroundColor:'transparent',
+      tension:.35, pointRadius:5, borderWidth:2, spanGaps:true
+    }));
+  } else {
+    // Aggregate: average per date
+    const byDate = {};
+    filteredRows.forEach(r=>{
+      if(!r.date) return;
+      if(!byDate[r.date]) byDate[r.date]=[];
+      if(r.overall!==null) byDate[r.date].push(r.overall);
+    });
+    const dates = Object.keys(byDate).sort();
+    datasets = [{
+      label:'All Stores (avg)',
+      data: dates.map(d=>({x:d, y:byDate[d].length?+avg(byDate[d]).toFixed(1):null})),
+      borderColor:'#C8102E', backgroundColor:'rgba(200,16,46,.1)',
+      fill:true, tension:.35, pointRadius:5, spanGaps:true
+    }];
+  }
+
+  trendChart = new Chart(ctx, {
+    type:'line', data:{datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:datasets.length>1,position:'top',labels:{font:{size:11},boxWidth:12}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!==null?c.parsed.y+'%':'N/A'}`}}
+      },
+      scales:{
+        x:{type:'category',ticks:{font:{size:11},maxRotation:45},grid:{color:'#f1f5f9'}},
+        y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11}},grid:{color:'#f1f5f9'}}
+      }
+    }
+  });
+}
+
+/* ─── STORE TABLE ─── */
+function renderTable() {
+  const recent = mostRecent(filteredRows);
+  recent.sort((a,b) => {
+    let va = a[sortState.col], vb = b[sortState.col];
+    if (sortState.col==='overall') { va=a.overall??-1; vb=b.overall??-1; }
+    SECTIONS.forEach(s=>{ if(sortState.col==='sec_'+s.key){va=a.sections[s.key]??-1;vb=b.sections[s.key]??-1;} });
+    if (typeof va==='string') va=va.toLowerCase();
+    if (typeof vb==='string') vb=vb.toLowerCase();
+    va=va??''; vb=vb??'';
+    const c = va<vb?-1:va>vb?1:0;
+    return sortState.dir==='asc'?c:-c;
+  });
+
+  // Header
+  const cols = [
+    {key:'store',   label:'Store'},
+    {key:'rom',     label:'ROM'},
+    {key:'auditor', label:'Auditor'},
+    {key:'rm',      label:'Reg. Manager'},
+    {key:'date',    label:'Date'},
+    ...SECTIONS.map(s=>({key:'sec_'+s.key, label:s.short})),
+    {key:'overall', label:'Overall'},
+    {key:'severity',label:'Status'},
+  ];
+
+  const thead = document.getElementById('sct-head');
+  thead.innerHTML='';
+  const hrow = document.createElement('tr');
+  cols.forEach(col=>{
+    const th=document.createElement('th');
+    const active = sortState.col===col.key;
+    if(active) th.classList.add(sortState.dir);
+    th.innerHTML = col.label + '<span class="si"></span>';
+    th.onclick = ()=>{
+      if(sortState.col===col.key) sortState.dir=sortState.dir==='asc'?'desc':'asc';
+      else { sortState.col=col.key; sortState.dir='desc'; }
+      renderTable();
+    };
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+
+  // Body
+  const tbody = document.getElementById('sct-body');
+  tbody.innerHTML='';
+
+  if (!recent.length) {
+    tbody.innerHTML=`<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:var(--muted)">No stores match the current filters</td></tr>`;
+    return;
+  }
+
+  recent.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:700;color:var(--navy);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.store||''}">${row.store||'—'}</td>
+      <td>${row.rom||'—'}</td>
+      <td>${row.auditor||'—'}</td>
+      <td>${row.rm||'—'}</td>
+      <td style="white-space:nowrap">${row.date||'—'}</td>
+      ${SECTIONS.map(s=>{
+        const sc=row.sections[s.key];
+        return `<td><span class="sp ${scCls(sc)}">${sc!==null?sc.toFixed(0)+'%':'—'}</span></td>`;
+      }).join('')}
+      <td><span class="sp ${scCls(row.overall)}" style="font-size:12px">${row.overall!==null?row.overall.toFixed(1)+'%':'—'}</span></td>
+      <td><span class="sev ${sevCls(row.severity)}">${row.severity||'—'}</span></td>
+    `;
+
+    // Build expanded detail — tabs for each audit of this store
+    const detRow = document.createElement('tr');
+    detRow.className = 'det-row';
+    const detTd = document.createElement('td');
+    detTd.colSpan = cols.length;
+    const storeAudits = filteredRows.filter(r=>r.store===row.store).sort((a,b)=>b.ts-a.ts);
+    detTd.innerHTML = `<div class="det-inner">${buildDetail(storeAudits)}</div>`;
+    detRow.appendChild(detTd);
+
+    tr.onclick = () => {
+      const wasOpen = detRow.classList.contains('open');
+      document.querySelectorAll('.det-row.open').forEach(r=>r.classList.remove('open'));
+      document.querySelectorAll('table.sct tbody tr.open-row').forEach(r=>r.classList.remove('open-row'));
+      if (!wasOpen) {
+        detRow.classList.add('open');
+        tr.classList.add('open-row');
+      }
+    };
+
+    tbody.appendChild(tr);
+    tbody.appendChild(detRow);
+  });
+}
+
+function buildDetail(audits) {
+  if (!audits.length) return '<div style="color:var(--muted);font-size:12px">No audit data</div>';
+
+  // Tab buttons
+  const tabBar = audits.map((a,i)=>`
+    <button class="atab${i===0?' on':''}" onclick="switchAuditTab(this,${i})" type="button">
+      ${a.date||'Audit '+(i+1)} — ${a.overall!==null?a.overall.toFixed(0)+'%':'—'}
+    </button>`).join('');
+
+  // Audit content panes
+  const panes = audits.map((a,i)=>`
+    <div class="audit-content${i===0?' show':''}" data-tab="${i}">
+      <div class="det-secs">
+        ${SECTIONS.map(sec=>{
+          const secSc = a.sections[sec.key];
+          const qs = buildQList(sec, a);
+          return `<div class="det-sec">
+            <div class="det-sec-title">
+              <span>${sec.label}</span>
+              <span class="sp ${scCls(secSc)}" style="font-size:10px">${secSc!==null?secSc.toFixed(0)+'%':'—'}</span>
+            </div>
+            ${qs}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+
+  return `<div class="audit-tab-bar">${tabBar}</div>${panes}`;
+}
+
+function buildQList(sec, row) {
+  let html = '';
+  for (let q=sec.q1; q<=sec.qN; q++) {
+    const raw = (row.qs['q'+q]||'').trim();
+    const cls = raw==='1'?'y': raw==='0'?'n':'na';
+    const txt = raw==='1'?'✓ Yes': raw==='0'?'✗ No': (raw||'N/A');
+    const label = qLabels[q-1] ? 'Q'+q+'. '+qLabels[q-1] : 'Q'+q;
+    const short = label.length>72 ? label.slice(0,70)+'…' : label;
+    html += `<div class="det-q"><span class="det-ql">${short}</span><span class="det-qv ${cls}">${txt}</span></div>`;
+  }
+  return html;
+}
+
+/* ─── HEATMAP ─── */
+function renderHeatmap() {
+  const grid = document.getElementById('heat-grid');
+  const recent = mostRecent(filteredRows)
+    .filter(r=>r.overall!==null)
+    .sort((a,b)=>a.overall-b.overall);
+
+  if (!recent.length) { grid.innerHTML='<div style="color:var(--muted);font-size:13px">No data</div>'; return; }
+
+  grid.innerHTML = recent.map(r=>`
+    <div class="hcell" style="background:${heatBg(r.overall)}">
+      <div class="h-store" title="${r.store||''}">${(r.store||'—').replace(/^Ham(leys)?[\s\-\.]+/i,'')}</div>
+      <div class="h-score" style="color:${scCol(r.overall)}">${r.overall.toFixed(0)}%</div>
+      <div class="h-sev" style="color:${scCol(r.overall)}">${r.severity}</div>
+    </div>`).join('');
+}
+
+/* ─── ALERTS ─── */
+function renderAlerts() {
+  const storeFilter = gv('f-store');
+  const list = document.getElementById('alerts-list');
+
+  if (storeFilter) {
+    // Single store mode: flag sections below 40%
+    document.getElementById('al-title').textContent = '⚠ Section Alerts — ' + storeFilter;
+    document.getElementById('al-sub').textContent = 'Sections scoring below 40% in the last 5 audits';
+    const rows = filteredRows.filter(r=>r.store===storeFilter);
+    const bad = SECTIONS.map(sec=>{
+      const scores = rows.map(r=>r.sections[sec.key]).filter(v=>v!==null);
+      const a = avg(scores);
+      return {sec, avg:a, min:scores.length?Math.min(...scores):null};
+    }).filter(x=>x.avg!==null && x.avg<40);
+
+    list.innerHTML = bad.length
+      ? bad.map(({sec,avg:a,min:mn})=>`
+          <div class="al sec">
+            <div class="al-ico">🔴</div>
+            <div class="al-body">
+              <div class="al-name">${sec.label}</div>
+              <div class="al-meta">${storeFilter}</div>
+              <div class="al-tags">
+                <span class="al-tag">Avg: ${a.toFixed(1)}%</span>
+                <span class="al-tag">Min: ${mn!==null?mn.toFixed(1)+'%':'—'}</span>
+              </div>
+            </div>
+            <div class="al-score" style="color:var(--red)">${a.toFixed(0)}%</div>
+          </div>`).join('')
+      : '<div class="no-alerts">✅ No sections below 40% for this store in the last 5 audits.</div>';
+    return;
+  }
+
+  // All stores: Critical < 50%, At Risk < 65%
+  document.getElementById('al-title').textContent = '⚠ Critical Alerts';
+  document.getElementById('al-sub').textContent   = 'Stores scoring below 65% in most recent audit';
+
+  const alerts = mostRecent(filteredRows)
+    .filter(r=>r.overall!==null && r.overall<65)
+    .sort((a,b)=>a.overall-b.overall);
+
+  list.innerHTML = alerts.length
+    ? alerts.map(row=>{
+        const isCrit = row.overall<50;
+        const worst3 = SECTIONS
+          .map(s=>({label:s.label,sc:row.sections[s.key]}))
+          .filter(x=>x.sc!==null)
+          .sort((a,b)=>a.sc-b.sc)
+          .slice(0,3);
+        return `
+          <div class="al ${isCrit?'crit':'risk'}">
+            <div class="al-ico">${isCrit?'🔴':'🟡'}</div>
+            <div class="al-body">
+              <div class="al-name">${row.store||'—'}</div>
+              <div class="al-meta">ROM: ${row.rom||'—'} · ${row.auditor||'—'} · ${row.date||'—'}</div>
+              <div class="al-tags">
+                <span style="font-size:10px;color:var(--muted);align-self:center">Weakest:</span>
+                ${worst3.map(x=>`<span class="al-tag">${x.label.split(' ')[0]}: ${x.sc.toFixed(0)}%</span>`).join('')}
+              </div>
+            </div>
+            <div class="al-score">${row.overall.toFixed(1)}%</div>
+          </div>`;
+      }).join('')
+    : '<div class="no-alerts">✅ No critical or at-risk stores in current view.</div>';
+}
+
+/* ─── AUDIT TAB SWITCH (global, called inline) ─── */
+window.switchAuditTab = function(btn, idx) {
+  const container = btn.closest('.det-inner');
+  container.querySelectorAll('.atab').forEach(b=>b.classList.remove('on'));
+  container.querySelectorAll('.audit-content').forEach(p=>p.classList.remove('show'));
+  btn.classList.add('on');
+  container.querySelector(`.audit-content[data-tab="${idx}"]`).classList.add('show');
+};
+
+/* ─── STORE PROGRESS ─── */
+// Only called when a single store is selected via the Store filter.
+// Shows section-by-section scores across that store's last 5 audits.
+let _progCharts = [];
+
+function renderProgress() {
+  // Destroy previous chart instances
+  _progCharts.forEach(c => { try { c.destroy(); } catch(e){} });
+  _progCharts = [];
+
+  const panesEl = document.getElementById('prog-panes');
+  panesEl.innerHTML = '';
+
+  const store = gv('f-store');
+  if (!store) return; // safety — should never be called without a store filter
+
+  // Update panel title
+  document.getElementById('prog-title').textContent = store + ' — Section Progress';
+
+  // Get last 5 audits for this store, oldest first
+  const audits = filteredRows
+    .filter(r => r.store === store)
+    .sort((a,b) => a.ts - b.ts)
+    .slice(-5);
+
+  if (!audits.length) {
+    panesEl.innerHTML = '<div class="prog-empty">No audits found for this store.</div>';
+    return;
+  }
+
+  const dateLabels = audits.map(a => a.date || '—');
+
+  // ── LEFT: one mini line chart per section ──
+  const chartsHTML = SECTIONS.map((sec, i) => {
+    const ss = audits.map(a => a.sections[sec.key]).filter(v => v !== null);
+    let arrowHTML = '';
+    if (ss.length >= 2) {
+      const diff = ss[ss.length-1] - ss[0];
+      const cl = diff > 1 ? 'up' : diff < -1 ? 'dn' : 'flat';
+      const ar = diff > 1 ? '▲' : diff < -1 ? '▼' : '→';
+      arrowHTML = `<span class="prog-arrow ${cl}">${ar} ${Math.abs(diff).toFixed(0)}%</span>`;
+    }
+    return `
+      <div class="prog-chart-row">
+        <div class="prog-chart-label">
+          <span>${sec.label}</span>${arrowHTML}
+        </div>
+        <div class="prog-chart-wrap"><canvas id="pc-${i}"></canvas></div>
+      </div>`;
+  }).join('');
+
+  // ── RIGHT: section × audit score matrix table ──
+  const headerCells = dateLabels.map(d =>
+    `<th style="text-align:right;padding:6px 8px;font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap">${d}</th>`
+  ).join('');
+
+  const bodyRows = SECTIONS.map(sec => {
+    const scores = audits.map(a => a.sections[sec.key]);
+    const valid  = scores.filter(v => v !== null);
+    const first  = valid.length ? valid[0] : null;
+    const last   = valid.length ? valid[valid.length-1] : null;
+    const diff   = (first !== null && last !== null && valid.length > 1) ? last - first : null;
+    const ar = diff === null ? '—' : diff > 1 ? '▲' : diff < -1 ? '▼' : '→';
+    const tc = diff === null ? 'color:var(--muted)'
+             : diff > 1     ? 'color:var(--green)'
+             : diff < -1    ? 'color:var(--red)'
+             : 'color:var(--muted)';
+    const cells = scores.map(sc =>
+      `<td style="text-align:right;padding:6px 8px">
+        ${sc !== null
+          ? `<span class="sp ${scCls(sc)}" style="font-size:10px">${sc.toFixed(0)}%</span>`
+          : `<span style="color:var(--muted);font-size:11px">N/A</span>`}
+       </td>`
+    ).join('');
+    return `<tr>
+      <td style="padding:6px 8px;font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap">${sec.label}</td>
+      ${cells}
+      <td style="text-align:center;padding:6px 8px;font-size:14px;font-weight:900;${tc}">${ar}</td>
+    </tr>`;
+  }).join('');
+
+  // Also add an Overall row
+  const ovScores = audits.map(a => a.overall);
+  const ovValid  = ovScores.filter(v => v !== null);
+  const ovFirst  = ovValid.length ? ovValid[0] : null;
+  const ovLast   = ovValid.length ? ovValid[ovValid.length-1] : null;
+  const ovDiff   = (ovFirst !== null && ovLast !== null && ovValid.length > 1) ? ovLast - ovFirst : null;
+  const ovAr = ovDiff === null ? '—' : ovDiff > 1 ? '▲' : ovDiff < -1 ? '▼' : '→';
+  const ovTc = ovDiff === null ? 'color:var(--muted)'
+             : ovDiff > 1     ? 'color:var(--green)'
+             : ovDiff < -1    ? 'color:var(--red)'
+             : 'color:var(--muted)';
+  const ovCells = ovScores.map(sc =>
+    `<td style="text-align:right;padding:6px 8px">
+      ${sc !== null
+        ? `<span class="sp ${scCls(sc)}" style="font-size:11px;font-weight:800">${sc.toFixed(1)}%</span>`
+        : `<span style="color:var(--muted);font-size:11px">N/A</span>`}
+     </td>`
+  ).join('');
+  const overallRow = `<tr style="background:var(--navy-light)">
+    <td style="padding:6px 8px;font-size:12px;font-weight:800;color:var(--navy)">Overall</td>
+    ${ovCells}
+    <td style="text-align:center;padding:6px 8px;font-size:14px;font-weight:900;${ovTc}">${ovAr}</td>
+  </tr>`;
+
+  panesEl.innerHTML = `
+    <div class="prog-inner">
+      <div class="prog-charts">${chartsHTML}</div>
+      <div>
+        <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:360px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Section</th>
+                ${headerCells}
+                <th style="padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-align:center">Trend</th>
+              </tr>
+            </thead>
+            <tbody>${bodyRows}${overallRow}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:var(--navy-light);border-radius:8px;font-size:11px;color:var(--navy-mid);line-height:1.8">
+          <strong>▲ Improving</strong> — latest audit higher than first &nbsp;·&nbsp;
+          <strong>▼ Deteriorating</strong> — latest lower than first &nbsp;·&nbsp;
+          <strong>→ Stable</strong> — within ±1%
+        </div>
+      </div>
+    </div>`;
+
+  // Draw mini charts (rAF to ensure canvases exist in DOM)
+  requestAnimationFrame(() => {
+    SECTIONS.forEach((sec, i) => {
+      const canvas = document.getElementById('pc-' + i);
+      if (!canvas) return;
+      const scores = audits.map(a => a.sections[sec.key]);
+      const validScores = scores.filter(v => v !== null);
+      const colAvg = validScores.length
+        ? validScores.reduce((a,b) => a+b, 0) / validScores.length : 0;
+      const col = scCol(colAvg);
+      _progCharts.push(new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: dateLabels,
+          datasets: [{
+            data: scores.map(s => s !== null ? +s.toFixed(1) : null),
+            borderColor: col,
+            backgroundColor: col + '22',
+            fill: true, tension: .4, pointRadius: 4,
+            borderWidth: 2, spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 350 },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              title: i => [i[0].label],
+              label: i => ` ${sec.label}: ${i.parsed.y !== null ? i.parsed.y + '%' : 'N/A'}`
+            }}
+          },
+          scales: {
+            x: { ticks: { font:{size:9}, maxRotation: 0 }, grid: { display: false } },
+            y: { min:0, max:100, ticks: { callback: v=>v+'%', font:{size:9}, maxTicksLimit:4 }, grid: { color:'#f1f5f9' } }
+          }
+        }
+      }));
+    });
+  });
+}
+
+/* ─── EXPORT ─── */
+document.getElementById('btn-export').onclick = () => {
+  if (!filteredRows.length) return;
+  const headers = ['Store','ROM','Auditor','Regional Manager','Date',
+    ...SECTIONS.map(s=>s.label+' %'),'Overall %','Severity'];
+  const rows = filteredRows.map(r=>[
+    r.store||'', r.rom||'', r.auditor||'', r.rm||'', r.date||'',
+    ...SECTIONS.map(s=>r.sections[s.key]!==null?r.sections[s.key].toFixed(1):''),
+    r.overall!==null?r.overall.toFixed(1):'', r.severity||''
+  ]);
+  const csv = [headers, ...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'hamleys_audit_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+};
+
+/* ═══ BOOT ═══ */
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hamleys Audit — Upload</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C8102E;--red-light:#fdf0f2;--red-mid:#f8c8d0;
+  --navy:#1a2340;--navy-mid:#2d3a5c;--navy-light:#eef0f6;
+  --green:#16a34a;--green-bg:#dcfce7;
+  --amber:#d97706;--amber-bg:#fef3c7;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --bg:#f4f6fb;--surface:#fff;
+  --radius:12px;--radius-sm:7px;
+  --shadow:0 2px 10px rgba(0,0,0,.08)
+}
+body{font-family:'Inter',system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* NAV */
+nav{
+  background:var(--navy);padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)
+}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:34px;height:34px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff}
+.nav-title{color:#fff;font-weight:700;font-size:15px}
+.nav-sub{color:rgba(255,255,255,.38);font-size:10px;margin-top:1px}
+.nav-links{display:flex;gap:6px}
+.nl{padding:6px 13px;border-radius:6px;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;text-decoration:none;transition:all .15s}
+.nl:hover{background:rgba(255,255,255,.1);color:#fff}
+.nl.go{background:rgba(200,16,46,.7);border:1px solid var(--red);color:#fff}
+.nl.go:hover{background:var(--red)}
+
+/* PAGE */
+.page{max-width:720px;margin:0 auto;padding:36px 22px 64px}
+.page-head{margin-bottom:28px}
+.page-head h1{font-size:24px;font-weight:800;color:var(--navy);margin-bottom:5px}
+.page-head p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* HOW-TO STEPS */
+.steps{
+  background:var(--navy-light);border:1px solid #c7d0e8;
+  border-radius:var(--radius);padding:16px 20px;margin-bottom:22px
+}
+.steps-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--navy-mid);margin-bottom:10px}
+.steps-list{display:flex;flex-direction:column;gap:7px}
+.step{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--navy-mid);line-height:1.5}
+.step-num{
+  width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px
+}
+
+/* CARD */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px
+}
+
+/* DROP ZONE */
+#drop-zone{
+  border:2.5px dashed var(--border);border-radius:var(--radius);
+  padding:52px 24px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--bg);position:relative;margin-bottom:0
+}
+#drop-zone:hover,#drop-zone.over{border-color:var(--red);background:var(--red-light)}
+#drop-zone .dz-icon{font-size:46px;margin-bottom:14px;display:block}
+#drop-zone .dz-title{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:6px}
+#drop-zone .dz-sub{font-size:13px;color:var(--muted);line-height:1.65}
+#file-input{display:none}
+.browse-btn{
+  display:inline-block;margin-top:20px;padding:10px 26px;
+  background:var(--red);color:#fff;border-radius:var(--radius-sm);
+  font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s
+}
+.browse-btn:hover{opacity:.87}
+
+/* PROCESSING */
+#proc-state{display:none;padding:40px 24px;text-align:center}
+.spinner{width:44px;height:44px;border:3.5px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.proc-sub{font-size:13px;color:var(--muted)}
+
+/* RESULT */
+#result-state{display:none;padding:28px 24px}
+.res-icon{font-size:50px;text-align:center;display:block;margin-bottom:14px}
+.res-title{font-size:20px;font-weight:800;color:var(--navy);text-align:center;margin-bottom:5px}
+.res-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.stat-box{background:var(--navy-light);border-radius:var(--radius-sm);padding:14px 12px;text-align:center}
+.stat-val{font-size:28px;font-weight:800;color:var(--navy);line-height:1}
+.stat-label{font-size:10px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.go-btn{
+  display:block;width:100%;padding:14px;background:var(--red);color:#fff;
+  border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;
+  cursor:pointer;text-align:center;text-decoration:none;font-family:inherit;
+  transition:opacity .15s;letter-spacing:.01em
+}
+.go-btn:hover{opacity:.87}
+.again-btn{
+  display:block;width:100%;margin-top:10px;padding:10px;
+  background:transparent;color:var(--muted);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:13px;cursor:pointer;
+  font-family:inherit;transition:all .15s
+}
+.again-btn:hover{border-color:var(--navy);color:var(--navy)}
+
+/* ERROR */
+#err-state{display:none;padding:28px 24px;text-align:center}
+.err-icon{font-size:42px;margin-bottom:12px;display:block}
+.err-title{font-size:16px;font-weight:700;color:var(--red);margin-bottom:6px}
+.err-msg{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.65}
+.retry-btn{
+  padding:9px 22px;background:var(--red);color:#fff;border:none;
+  border-radius:var(--radius-sm);font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit
+}
+
+/* PREVIEW TABLE (shown after parse) */
+#preview-wrap{display:none;margin-top:18px}
+.prev-title{font-size:12px;font-weight:700;color:var(--navy-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.prev-scroll{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border)}
+table.prev{width:100%;border-collapse:collapse;font-size:11px;min-width:560px}
+table.prev th{padding:7px 10px;background:var(--navy);color:rgba(255,255,255,.8);text-align:left;font-weight:600;white-space:nowrap}
+table.prev td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.prev tr:last-child td{border-bottom:none}
+table.prev tr:nth-child(even) td{background:var(--bg)}
+
+/* SESSIONS */
+.sessions-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.sec-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sec-head-title{font-size:13px;font-weight:700;color:var(--text)}
+.sec-head-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.clear-all-btn{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 8px;border-radius:4px}
+.clear-all-btn:hover{background:var(--red-light)}
+.sec-body{padding:14px 20px}
+.sess-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.sess-row:last-child{border-bottom:none}
+.si-label{font-weight:700;font-size:13px;color:var(--text)}
+.si-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.latest-tag{display:inline-block;background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em;margin-left:7px;vertical-align:middle}
+.del-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:4px 10px;transition:all .15s;font-family:inherit}
+.del-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
+.empty-sess{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.info-note{background:var(--navy-light);border-radius:var(--radius-sm);padding:11px 14px;font-size:12px;color:var(--navy-mid);line-height:1.7;margin-top:14px}
+.info-note strong{color:var(--navy)}
+
+@media(max-width:560px){.stat-grid{grid-template-columns:1fr 1fr}.page{padding:20px 14px 48px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">H</div>
+    <div>
+      <div class="nav-title">Hamleys Store Audit</div>
+      <div class="nav-sub">Data Upload</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nl">Home</a>
+    <a href="dashboard.html" class="nl go">→ Dashboard</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-head">
+    <h1>Upload Audit CSV</h1>
+    <p>Drop your Microsoft Forms export below. The dashboard reads it instantly from your browser — nothing is sent to any server.</p>
+  </div>
+
+  <!-- HOW TO STEPS -->
+  <div class="steps">
+    <div class="steps-title">How to export from Microsoft Forms</div>
+    <div class="steps-list">
+      <div class="step"><div class="step-num">1</div>Open your form in <strong>Microsoft Forms</strong> → click <strong>Responses</strong></div>
+      <div class="step"><div class="step-num">2</div>Click <strong>Open in Excel</strong> (downloads .xlsx)</div>
+      <div class="step"><div class="step-num">3</div>In Excel → <strong>File → Save As → CSV UTF-8 (.csv)</strong></div>
+      <div class="step"><div class="step-num">4</div>Drop that .csv file below ↓</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="card">
+
+    <!-- DROP ZONE -->
+    <div id="drop-zone">
+      <span class="dz-icon">📋</span>
+      <div class="dz-title">Drop your MS Forms CSV here</div>
+      <div class="dz-sub">Drag &amp; drop, or click Browse below<br/>Accepts .csv files exported from Microsoft Forms</div>
+      <label class="browse-btn">Browse file<input type="file" id="file-input" accept=".csv,.txt"/></label>
+    </div>
+
+    <!-- PROCESSING -->
+    <div id="proc-state">
+      <div class="spinner"></div>
+      <div class="proc-title">Reading your data…</div>
+      <div class="proc-sub" id="proc-msg">Parsing rows</div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="result-state">
+      <span class="res-icon">✅</span>
+      <div class="res-title" id="res-title">Upload complete</div>
+      <div class="res-sub" id="res-sub"></div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div id="preview-wrap">
+        <div class="prev-title">Preview — first 5 rows</div>
+        <div class="prev-scroll"><table class="prev" id="prev-table"></table></div>
+      </div>
+      <br/>
+      <a href="dashboard.html" class="go-btn">→ View Dashboard</a>
+      <button class="again-btn" onclick="resetUpload()">Upload another file</button>
+    </div>
+
+    <!-- ERROR -->
+    <div id="err-state">
+      <span class="err-icon">⚠️</span>
+      <div class="err-title" id="err-title">Could not read file</div>
+      <div class="err-msg" id="err-msg"></div>
+      <button class="retry-btn" onclick="resetUpload()">Try again</button>
+    </div>
+
+  </div>
+
+  <!-- SAVED SESSIONS -->
+  <div class="sessions-wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-head-title">Saved upload history</div>
+        <div class="sec-head-sub">Dashboard always uses the most recently saved file.</div>
+      </div>
+      <button class="clear-all-btn" onclick="clearAll()">Clear all</button>
+    </div>
+    <div class="sec-body">
+      <div id="sessions-list"></div>
+      <div class="info-note">
+        <strong>Storage:</strong> Data is saved in your browser's localStorage. It persists across sessions on the same device. 
+        Up to <strong>5 uploads</strong> are kept — oldest auto-removed when you exceed that.
+        The dashboard always uses the <strong>most recently uploaded</strong> file.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ─── EXACT COLUMN MAPPING for Hamleys MS Forms export ─── */
+// Col indices (0-based) after PapaParse with header:false
+// [0] Id  [1] Start time  [2] Completion time  [3] Email  [4] Name
+// [5] Name of Auditor\n  [6] ROM  [7] Store Name  [8] Store Code
+// [9] Regional Manager  [10] Date of Visit
+// [11..82] Q1..Q72
+const META = {
+  auditor:  5,   // "Name of Auditor\n"
+  rom:      6,   // "ROM"
+  store:    7,   // "Store Name"
+  code:     8,   // "Store Code"
+  rm:       9,   // "Regional Manager"
+  date:     10,  // "Date of Visit"
+};
+const Q_START = 11;
+const Q_END   = 82;   // inclusive — 72 questions
+const Q_COUNT = Q_END - Q_START + 1; // 72
+
+const SECTIONS = [
+  { key:'foh', label:'FOH & Visual Merchandising', q1:1,  qN:27 },
+  { key:'csd', label:'Customer Service & Till',    q1:28, qN:40 },
+  { key:'ppl', label:'People & Training',          q1:41, qN:52 },
+  { key:'boh', label:'Back of House & Inventory',  q1:53, qN:66 },
+  { key:'com', label:'Compliance & Admin',          q1:67, qN:72 },
+];
+
+/* ─── SCORING ─── */
+function parseAns(v) {
+  const s = (v||'').trim();
+  if (s==='1') return 1;
+  if (s==='0') return 0;
+  return null; // Not Applicable → excluded
+}
+
+function secScore(rawArr, sec) {
+  let yes=0, tot=0;
+  for (let q=sec.q1; q<=sec.qN; q++) {
+    const v = parseAns(rawArr[Q_START + q - 1]);
+    if (v!==null) { yes+=v; tot++; }
+  }
+  return tot ? (yes/tot*100) : null;
+}
+
+function overallScore(secScores) {
+  const valid = secScores.filter(s=>s!==null);
+  return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null;
+}
+
+function severity(pct) {
+  if (pct===null) return 'Unknown';
+  if (pct<50) return 'Critical';
+  if (pct<65) return 'At Risk';
+  if (pct<85) return 'Good';
+  return 'Excellent';
+}
+
+/* ─── PARSE CSV ─── */
+function parseCSV(text, filename) {
+  const result = Papa.parse(text, { skipEmptyLines:true });
+  let rows = result.data;
+  if (!rows.length) throw new Error('File is empty.');
+
+  // Detect & skip header row
+  const firstCell = (rows[0][META.auditor]||'').trim().toLowerCase();
+  const isHeader = !['0','1','not applicable',''].includes(firstCell) || isNaN(rows[0][Q_START]);
+  const headerRow = isHeader ? rows[0] : null;
+  if (isHeader) rows = rows.slice(1);
+  if (!rows.length) throw new Error('No data rows found after header.');
+
+  // Extract question short labels from header
+  let qLabels = [];
+  if (headerRow) {
+    for (let i=Q_START; i<=Q_END && i<headerRow.length; i++) {
+      // Take the first sentence fragment only
+      const full = (headerRow[i]||'').trim();
+      const clean = full.split('\n')[0].replace(/^\d+\.\s*/,'').replace(/\xa0/g,' ').trim();
+      qLabels.push(clean.length>90 ? clean.slice(0,88)+'…' : clean);
+    }
+  }
+
+  const parsed = rows.map(raw => {
+    const ss = SECTIONS.map(s => secScore(raw, s));
+    const ov = overallScore(ss);
+
+    // Extract raw Q answers
+    const qs = {};
+    for (let q=1; q<=Q_COUNT; q++) {
+      qs['q'+q] = (raw[Q_START+q-1]||'').trim();
+    }
+
+    return {
+      auditor:  (raw[META.auditor]||'').trim(),
+      rom:      (raw[META.rom]    ||'').trim(),
+      store:    (raw[META.store]  ||'').trim(),
+      code:     (raw[META.code]   ||'').trim(),
+      rm:       (raw[META.rm]     ||'').trim(),
+      date:     (raw[META.date]   ||'').trim(),
+      ts:       new Date((raw[META.date]||'')).getTime()||0,
+      sections: { foh:ss[0], csd:ss[1], ppl:ss[2], boh:ss[3], com:ss[4] },
+      overall:  ov,
+      severity: severity(ov),
+      qs,
+    };
+  }).filter(r => r.store || r.rom);
+
+  if (!parsed.length) throw new Error('No valid audit rows detected. Check column alignment.');
+  return { rows:parsed, qLabels, filename };
+}
+
+/* ─── FILE HANDLING ─── */
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('over'); const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+dropZone.addEventListener('click', e => { if(!e.target.closest('label')) fileInput.click(); });
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+  if (!file.name.match(/\.(csv|txt)$/i)) {
+    showErr('Wrong file type', 'Please upload a .csv file. In Excel: File → Save As → CSV UTF-8.');
+    return;
+  }
+  setState('proc');
+  document.getElementById('proc-msg').textContent = 'Reading ' + file.name + '…';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      document.getElementById('proc-msg').textContent = 'Scoring rows…';
+      const data = parseCSV(e.target.result, file.name);
+      saveSession(data);
+      showResult(data, file.name);
+    } catch(err) {
+      showErr('Processing error', err.message);
+    }
+  };
+  reader.onerror = () => showErr('File read error', 'Could not read the file. Try re-saving as CSV UTF-8.');
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* ─── SAVE SESSION ─── */
+const STORAGE_KEY = 'hamleys_audit_sessions';
+const MAX_SESSIONS = 5;
+
+function getSessions() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch(e) { return []; }
+}
+
+function saveSession(data) {
+  let sessions = getSessions();
+  while (sessions.length >= MAX_SESSIONS) sessions.shift();
+  const label = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  sessions.push({
+    id: Date.now().toString(),
+    label,
+    filename: data.filename,
+    savedAt: new Date().toISOString(),
+    rowCount: data.rows.length,
+    rows: data.rows,
+    qLabels: data.qLabels,
+  });
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  } catch(e) {
+    // Storage quota — drop oldest
+    sessions.shift();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  }
+  renderSessions();
+}
+
+/* ─── SHOW RESULT ─── */
+function showResult(data, filename) {
+  const rows = data.rows;
+  const stores = new Set(rows.map(r=>r.store).filter(Boolean));
+  const roms   = new Set(rows.map(r=>r.rom).filter(Boolean));
+  const valid  = rows.filter(r=>r.overall!==null);
+  const avg    = valid.length ? valid.reduce((s,r)=>s+r.overall,0)/valid.length : 0;
+
+  document.getElementById('res-title').textContent = rows.length + ' audits loaded successfully';
+  document.getElementById('res-sub').textContent = filename + ' · ' + new Date().toLocaleString('en-IN');
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${rows.length}</div><div class="stat-label">Rows</div></div>
+    <div class="stat-box"><div class="stat-val">${stores.size}</div><div class="stat-label">Stores</div></div>
+    <div class="stat-box"><div class="stat-val">${avg.toFixed(0)}%</div><div class="stat-label">Avg Score</div></div>
+  `;
+
+  // Preview table — first 5 rows
+  const preview = rows.slice(0,5);
+  const prevTable = document.getElementById('prev-table');
+  prevTable.innerHTML = `
+    <tr>
+      <th>Store</th><th>ROM</th><th>Auditor</th><th>Date</th>
+      <th>FOH%</th><th>CSD%</th><th>PPL%</th><th>BOH%</th><th>COM%</th><th>Overall</th><th>Status</th>
+    </tr>
+    ${preview.map(r=>`<tr>
+      <td>${r.store||'—'}</td><td>${r.rom||'—'}</td><td>${r.auditor||'—'}</td><td>${r.date||'—'}</td>
+      <td>${r.sections.foh!==null?r.sections.foh.toFixed(0)+'%':'—'}</td>
+      <td>${r.sections.csd!==null?r.sections.csd.toFixed(0)+'%':'—'}</td>
+      <td>${r.sections.ppl!==null?r.sections.ppl.toFixed(0)+'%':'—'}</td>
+      <td>${r.sections.boh!==null?r.sections.boh.toFixed(0)+'%':'—'}</td>
+      <td>${r.sections.com!==null?r.sections.com.toFixed(0)+'%':'—'}</td>
+      <td><strong>${r.overall!==null?r.overall.toFixed(1)+'%':'—'}</strong></td>
+      <td>${r.severity}</td>
+    </tr>`).join('')}
+  `;
+  document.getElementById('preview-wrap').style.display='block';
+  setState('result');
+}
+
+/* ─── UI STATE ─── */
+function setState(s) {
+  document.getElementById('drop-zone').style.display   = s==='upload' ? '' : 'none';
+  document.getElementById('proc-state').style.display  = s==='proc'   ? '' : 'none';
+  document.getElementById('result-state').style.display= s==='result' ? '' : 'none';
+  document.getElementById('err-state').style.display   = s==='error'  ? '' : 'none';
+}
+function showErr(title, msg) {
+  document.getElementById('err-title').textContent = title;
+  document.getElementById('err-msg').textContent   = msg;
+  setState('error');
+}
+function resetUpload() { fileInput.value=''; document.getElementById('preview-wrap').style.display='none'; setState('upload'); }
+
+/* ─── SESSIONS LIST ─── */
+function renderSessions() {
+  const sessions = getSessions();
+  const el = document.getElementById('sessions-list');
+  if (!sessions.length) { el.innerHTML='<div class="empty-sess">No uploads saved yet.</div>'; return; }
+  const sorted = [...sessions].reverse();
+  el.innerHTML = sorted.map((s,i) => `
+    <div class="sess-row">
+      <div>
+        <div class="si-label">${s.label}${i===0?'<span class="latest-tag">Latest</span>':''}</div>
+        <div class="si-meta">${s.filename} · ${s.rowCount} rows</div>
+      </div>
+      <button class="del-btn" onclick="deleteSession('${s.id}')">Remove</button>
+    </div>
+  `).join('');
+}
+
+function deleteSession(id) {
+  if (!confirm('Remove this upload?')) return;
+  const s = getSessions().filter(x=>x.id!==id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  renderSessions();
+}
+function clearAll() {
+  if (!confirm('Remove ALL uploads? The dashboard will show no data until you upload again.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderSessions();
+}
+
+/* ─── INIT ─── */
+setState('upload');
+renderSessions();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hamleys Store Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C8102E;--navy:#1a2340;--navy-mid:#2d3a5c;
+  --bg:#f4f6fb;--surface:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+nav{
+  background:var(--navy);height:56px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 12px rgba(0,0,0,.3)
+}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
+.brand-name{color:#fff;font-weight:700;font-size:15px}
+.brand-sub{color:rgba(255,255,255,.4);font-size:10px;margin-top:1px}
+.nav-links{display:flex;gap:6px}
+.nl{padding:6px 13px;border-radius:6px;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;text-decoration:none;transition:all .15s}
+.nl:hover{background:rgba(255,255,255,.1);color:#fff}
+.nl.active{background:var(--red);color:#fff}
+
+/* HERO */
+.hero{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:64px 24px;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 70% 60% at 50% 30%,rgba(200,16,46,.06) 0%,transparent 70%),var(--bg);
+}
+.toy-bg{position:absolute;inset:0;pointer-events:none}
+.tf{position:absolute;font-size:1.9rem;opacity:.06;animation:ft 10s ease-in-out infinite}
+.tf:nth-child(1){top:6%;left:4%;animation-delay:0s}
+.tf:nth-child(2){top:10%;right:5%;animation-delay:1.8s;font-size:2.3rem}
+.tf:nth-child(3){top:40%;left:2%;animation-delay:3s;font-size:1.5rem}
+.tf:nth-child(4){top:65%;right:3%;animation-delay:5s;font-size:2.1rem}
+.tf:nth-child(5){bottom:12%;left:6%;animation-delay:1s;font-size:1.6rem}
+.tf:nth-child(6){bottom:8%;right:8%;animation-delay:4s;font-size:2rem}
+.tf:nth-child(7){top:55%;left:0.5%;animation-delay:2.5s}
+.tf:nth-child(8){top:25%;right:10%;animation-delay:6s;font-size:1.4rem}
+@keyframes ft{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-20px) rotate(5deg)}}
+
+.hero-inner{position:relative;z-index:1;max-width:580px}
+.badge{
+  display:inline-block;padding:5px 14px;margin-bottom:20px;
+  background:rgba(200,16,46,.1);color:var(--red);
+  border:1px solid rgba(200,16,46,.2);border-radius:20px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em
+}
+h1{font-size:44px;font-weight:900;line-height:1.08;color:var(--navy);margin-bottom:14px}
+h1 em{color:var(--red);font-style:normal}
+p{font-size:16px;color:var(--muted);line-height:1.65;margin-bottom:36px}
+.ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-p{
+  display:inline-flex;align-items:center;gap:7px;padding:13px 26px;
+  background:var(--red);color:#fff;border-radius:8px;font-size:14px;
+  font-weight:700;text-decoration:none;
+  box-shadow:0 4px 16px rgba(200,16,46,.35);transition:all .2s
+}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(200,16,46,.45)}
+.btn-s{
+  display:inline-flex;align-items:center;gap:7px;padding:13px 26px;
+  background:var(--surface);color:var(--navy);border:2px solid var(--border);
+  border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s
+}
+.btn-s:hover{border-color:var(--navy);background:var(--navy);color:#fff}
+
+/* CARDS */
+.cards{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:16px;max-width:840px;margin:56px auto 0;padding:0 24px 64px
+}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px 20px;text-align:left;
+  box-shadow:0 2px 8px rgba(0,0,0,.06)
+}
+.card-icon{font-size:26px;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:5px}
+.card-desc{font-size:12px;color:var(--muted);line-height:1.65}
+
+@media(max-width:640px){.cards{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <div class="brand-name">Hamleys Store Audit</div>
+      <div class="brand-sub">Retail Operations Intelligence</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nl active">Home</a>
+    <a href="dashboard.html" class="nl">Dashboard</a>
+    <a href="admin.html" class="nl">Upload</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="toy-bg" aria-hidden="true">
+    <div class="tf">🧸</div><div class="tf">🎮</div><div class="tf">🚂</div>
+    <div class="tf">🎲</div><div class="tf">🪀</div><div class="tf">🤖</div>
+    <div class="tf">🧩</div><div class="tf">🎯</div>
+  </div>
+  <div class="hero-inner">
+    <div class="badge">Store Audit Intelligence</div>
+    <h1>Hamleys India<br/><em>Audit Dashboard</em></h1>
+    <p>Upload your Microsoft Forms CSV and instantly explore scores, section breakdowns, and critical alerts across all stores and regions.</p>
+    <div class="ctas">
+      <a href="dashboard.html" class="btn-p">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        View Dashboard
+      </a>
+      <a href="admin.html" class="btn-s">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-icon">📊</div>
+    <div class="card-title">Section-wise Scores</div>
+    <div class="card-desc">FOH & VM, CSD & Till, People, BOH & Inventory, Compliance — each section scored, charted, and ranked.</div>
+  </div>
+  <div class="card">
+    <div class="card-icon">🚨</div>
+    <div class="card-title">Critical Alerts</div>
+    <div class="card-desc">Stores below 50% flagged in red. Filter to a single store to surface sections below 40%.</div>
+  </div>
+  <div class="card">
+    <div class="card-icon">📅</div>
+    <div class="card-title">Last 5 Audits Only</div>
+    <div class="card-desc">All scores and trends use the 5 most recent audits per store — no stale history distorting the view.</div>
+  </div>
+</div>
+
+</body>
+</html>
